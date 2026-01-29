@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Search Engine</title>
+    <title>SKL Search</title>
+    <link rel="icon" type="image/png" href="/favicon.ico">
     <style>
         * {
             margin: 0;
@@ -37,6 +38,7 @@
             font-size: 48px;
             font-weight: 700;
             margin-bottom: 10px;
+            letter-spacing: -1px;
         }
 
         .header p {
@@ -58,6 +60,7 @@
             border-radius: 50px;
             outline: none;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s;
         }
 
         .search-input:focus {
@@ -74,11 +77,17 @@
             color: white;
             cursor: pointer;
             transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
         .search-button:hover {
             background: #ff5252;
             transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
         }
 
         .loading {
@@ -114,6 +123,8 @@
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             display: none;
+            max-height: 70vh;
+            overflow-y: auto;
         }
 
         .results-container.show {
@@ -140,6 +151,12 @@
         .result-item {
             padding: 20px 0;
             border-bottom: 1px solid #f0f0f0;
+            transition: all 0.3s;
+        }
+
+        .result-item:hover {
+            padding-left: 10px;
+            background-color: #f9f9f9;
         }
 
         .result-item:last-child {
@@ -153,9 +170,11 @@
             font-weight: 600;
             margin-bottom: 5px;
             display: inline-block;
+            transition: color 0.3s;
         }
 
         .result-title:hover {
+            color: #0052a3;
             text-decoration: underline;
         }
 
@@ -192,6 +211,13 @@
             display: block;
         }
 
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 40px;
+            font-size: 12px;
+        }
+
         @media (max-width: 600px) {
             .header h1 {
                 font-size: 32px;
@@ -200,14 +226,18 @@
             .search-box {
                 flex-direction: column;
             }
+
+            .results-container {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Search Engine</h1>
-            <p>Search across 100 websites in real-time</p>
+            <h1>SKL Search</h1>
+            <p>Search across 100+ websites + Wikipedia</p>
         </div>
 
         <div class="search-box">
@@ -215,7 +245,8 @@
                 type="text" 
                 class="search-input" 
                 id="searchInput" 
-                placeholder="Enter your search query..."
+                placeholder="Search the web..."
+                autocomplete="off"
             >
             <button class="search-button" id="searchButton">Search</button>
         </div>
@@ -224,7 +255,7 @@
 
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Searching across websites...</p>
+            <p>Searching...</p>
         </div>
 
         <div class="results-container" id="resultsContainer">
@@ -234,11 +265,15 @@
             </div>
             <div id="resultsList"></div>
         </div>
+
+        <div class="footer">
+            <p>SKL Search © 2025 | Powered by intelligent web search</p>
+        </div>
     </div>
 
     <script>
-        // PASTE YOUR REPLIT URL HERE
-        const API_URL = 'https://search-engine-backend--shreemaniyer69.replit.app/search';
+        const API_URL = '/search';
+
         const searchInput = document.getElementById('searchInput');
         const searchButton = document.getElementById('searchButton');
         const loading = document.getElementById('loading');
@@ -261,6 +296,11 @@
                 return;
             }
 
+            if (query.length < 2) {
+                showError('Search query must be at least 2 characters');
+                return;
+            }
+
             hideError();
             resultsContainer.classList.remove('show');
             loading.classList.add('show');
@@ -277,11 +317,11 @@
                     resultsContainer.classList.add('show');
                     queryDisplay.textContent = query;
                     resultCount.textContent = '0';
-                    resultsList.innerHTML = '<div class="no-results">No results found.</div>';
+                    resultsList.innerHTML = '<div class="no-results"><p>No results found. Try a different search.</p></div>';
                 }
             } catch (err) {
                 loading.classList.remove('show');
-                showError('Error connecting to search engine. Did you update the Replit URL?');
+                showError('Error: Unable to connect to search engine');
             }
         }
 
@@ -293,9 +333,11 @@
             results.forEach(result => {
                 const resultHTML = `
                     <div class="result-item">
-                        <a href="${result.url}" target="_blank" class="result-title">${result.title}</a>
-                        <div class="result-url">${result.url}</div>
-                        <div class="result-snippet">${result.snippet}</div>
+                        <a href="${escapeHtml(result.url)}" target="_blank" rel="noopener noreferrer" class="result-title">
+                            ${escapeHtml(result.title)}
+                        </a>
+                        <div class="result-url">${escapeHtml(result.url)}</div>
+                        <div class="result-snippet">${escapeHtml(result.snippet)}</div>
                     </div>
                 `;
                 resultsList.innerHTML += resultHTML;
@@ -312,6 +354,20 @@
         function hideError() {
             error.classList.remove('show');
         }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Focus search input on page load
+        searchInput.focus();
     </script>
 </body>
 </html>
